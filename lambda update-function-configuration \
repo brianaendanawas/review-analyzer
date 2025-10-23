@@ -1,0 +1,40 @@
+{
+    "FunctionName": "process-reviews",
+    "FunctionArn": "arn:aws:lambda:us-east-1:773836683412:function:process-reviews",
+    "Runtime": "python3.12",
+    "Role": "arn:aws:iam::773836683412:role/service-role/process-reviews-role-36ne5tbh",
+    "Handler": "process_reviews.handler",
+    "CodeSize": 1352,
+    "Description": "",
+    "Timeout": 3,
+    "MemorySize": 128,
+    "LastModified": "2025-10-09T16:58:59.000+0000",
+    "CodeSha256": "NKfiuU1JeBJ0Ydb0bG5Wf2Qpf5CyDC14/iWY/DFkGd0=",
+    "Version": "$LATEST",
+    "TracingConfig": {
+        "Mode": "PassThrough"
+    },
+    "RevisionId": "611f11bc-b2cf-41f3-b476-ecd22e3f4a42",
+    "State": "Active",
+    "LastUpdateStatus": "InProgress",
+    "LastUpdateStatusReason": "The function is being created.",
+    "LastUpdateStatusReasonCode": "Creating",
+    "PackageType": "Zip",
+    "Architectures": [
+        "x86_64"
+    ],
+    "EphemeralStorage": {
+        "Size": 512
+    },
+    "SnapStart": {
+        "ApplyOn": "None",
+        "OptimizationStatus": "Off"
+    },
+    "RuntimeVersionConfig": {
+        "RuntimeVersionArn": "arn:aws:lambda:us-east-1::runtime:4af3157c9dfde29be4e8f128147181e8978958ec7ddea506e754af7c3741a0a2"
+    },
+    "LoggingConfig": {
+        "LogFormat": "Text",
+        "LogGroup": "/aws/lambda/process-reviews"
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "LambdaFunctionConfigurations": [
+        {
+            "Id": "invoke-process-reviews-on-object-created",
+            "LambdaFunctionArn": "arn:aws:lambda:us-east-1:773836683412:function:process-reviews",
+            "Events": [
+                "s3:ObjectCreated:*"
+            ],
+            "Filter": {
+                "Key": {
+                    "FilterRules": [
+                        {
+                            "Name": "Prefix",
+                            "Value": "incoming/"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

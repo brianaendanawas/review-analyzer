@@ -1,35 +1,111 @@
-# Review Analyzer Mini Pipeline
+Review Analyzer – Mini Serverless Pipeline (Week 6)
 
-A small AWS serverless data-pipeline that processes incoming product reviews.
+Simple AWS pipeline that ingests JSON “reviews” from S3, processes them with Lambda, and publishes custom CloudWatch metrics with a dashboard and alarm.
 
-## 🧠 Overview
-When a new review JSON file is uploaded to the S3 bucket’s **incoming/** folder,  
-a Lambda function processes the review, computes average character and word length,  
-and sends custom CloudWatch metrics for monitoring.
+Services: S3 → Lambda (Python 3.12) → CloudWatch Logs & Metrics
 
-## ⚙️ Architecture
-- **S3 Bucket** – stores incoming JSON review files  
-- **Lambda (process-reviews)** – triggered manually or via EventBridge/S3; parses reviews and publishes metrics  
-- **CloudWatch Logs & Metrics** –  
-  - Namespace: `ReviewAnalyzer`  
-  - Metrics: `ReviewCount`, `AvgCharLen`, `AvgWordLen`  
-- **CloudWatch Alarm** – triggers SNS email if `AvgWordLen > 80`  
-- **SNS Topic (review-analyzer-alerts)** – sends email notifications
+Custom Metrics: AvgWordLen (Average) and ReviewCount (Sum)
 
-## 📊 Observability
-- Alarm tested successfully ✅ (SNS email received)  
-- Dashboard: `CloudWatch → Dashboards → ReviewAnalyzer`  
-  - Line: **AvgWordLen**  
-  - Number: **ReviewCount**  
-- Tested: **Oct 23, 2025**
+Namespace: ReviewAnalyzer
 
-## 🧰 Tools Used
-- AWS Lambda (Python 3.12)  
-- Amazon S3  
-- Amazon CloudWatch (Metrics, Alarms, Dashboard)  
-- AWS SNS  
-- AWS CloudShell + GitHub
+Trigger: S3 object create for incoming/*.json
 
-## 🚀 Next Steps
-- Add a small Python simulator that uploads random reviews every few seconds  
-- Include screenshots of the CloudWatch dashboard and alarm states
+How it works
+
+Upload a file such as
+
+{"review": "These headphones are very comfortable"}
+
+
+into s3://<bucket>/incoming/….
+
+S3 triggers Lambda.
+
+Lambda extracts review, calculates the average word length, and emits metrics.
+
+CloudWatch dashboard visualizes AvgWordLen and ReviewCount.
+
+An alarm monitors AvgWordLen and can notify via SNS.
+
+Quick Start (CLI)
+BUCKET=review-analyzer-briana-4nk3j3
+FUNCTION=process-reviews
+REGION=$(aws configure get region)
+
+# Direct invoke
+aws lambda invoke \
+  --function-name $FUNCTION \
+  --cli-binary-format raw-in-base64-out \
+  --payload '{"review":"quick smoke test"}' \
+  /dev/null >/dev/null
+
+# Simulator
+python3 tools/simulator.py --bucket $BUCKET --batch 6 --spike-every 3
+
+Dashboard & Alarm
+
+Dashboard: ReviewAnalyzer
+
+AvgWordLen → Namespace ReviewAnalyzer, Stat Average (1 min)
+
+ReviewCount → Namespace ReviewAnalyzer, Stat Sum (1 min)
+
+Set time range to Last 1 hour and refresh.
+Alarm: triggers if AvgWordLen > threshold for 1 datapoint.
+
+Lambda Details
+
+File: lambda/lambda_function.py
+
+Handler: lambda_function.lambda_handler
+
+Env var: METRIC_NS=ReviewAnalyzer
+
+Modes:
+
+Direct ({"review":"..."} or {"text":"..."})
+
+Manual ({"bucket":"...","key":"..."})
+
+S3 event trigger
+
+Runbook (Ops)
+
+Force a data point
+
+aws lambda invoke \
+  --function-name process-reviews \
+  --cli-binary-format raw-in-base64-out \
+  --payload '{"review":"ops smoke test"}' /dev/null
+
+
+Tail logs
+
+aws logs tail /aws/lambda/process-reviews --since 15m --follow
+
+
+Teardown (optional)
+
+# 1) Disable S3 trigger
+aws s3api put-bucket-notification-configuration \
+  --bucket <your-bucket> \
+  --notification-configuration '{}'
+
+# 2) Delete bucket contents
+aws s3 rm s3://<your-bucket>/ --recursive
+aws s3api delete-bucket --bucket <your-bucket>
+
+# 3) Delete Lambda (optional)
+aws lambda delete-function --function-name process-reviews
+
+Project Structure
+review-pipeline/
+├─ lambda/
+│  └─ lambda_function.py
+├─ tools/
+│  └─ simulator.py
+├─ README.md
+└─ .gitignore
+
+
+Notes: Metrics take ~1–2 minutes to appear. Namespace is case-sensitive.

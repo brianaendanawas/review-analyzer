@@ -1,0 +1,4 @@
+total 12
+drwxr-xr-x. 2 cloudshell-user cloudshell-user 4096 Oct 23 02:01 ./
+drwxr-xr-x. 6 cloudshell-user cloudshell-user 4096 Oct 25 20:04 ../
+-rw-r--r--. 1 cloudshell-user cloudshell-user 3251 Oct 25 20:03 lambda_function.py

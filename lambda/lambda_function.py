@@ -1,66 +1,72 @@
-import json
-import boto3
-import statistics
+import json, os, boto3, urllib.parse
 
-cloudwatch = boto3.client('cloudwatch')
+cw = boto3.client("cloudwatch")
+s3 = boto3.client("s3")
+METRIC_NS = os.getenv("METRIC_NS", "ReviewAnalyzer")
 
-def extract_reviews(raw_text: str):
+def _emit_metrics(avg_word_len=None, count=None):
+    data = []
+    if avg_word_len is not None:
+        data.append({
+            "MetricName": "AvgWordLen",
+            "Value": float(avg_word_len),
+            "Unit": "None"
+        })
+    if count is not None:
+        data.append({
+            "MetricName": "ReviewCount",
+            "Value": int(count),
+            "Unit": "Count"
+        })
+    if not data:
+        return
+    cw.put_metric_data(Namespace=METRIC_NS, MetricData=data)
+
+def _avg_word_len(text: str) -> float:
+    words = [w for w in text.strip().split() if w]
+    if not words:
+        return 0.0
+    lengths = [len(w) for w in words]
+    return sum(lengths) / len(lengths)
+
+def _process_review(text: str):
+    avg = _avg_word_len(text)
+    _emit_metrics(avg_word_len=avg, count=1)
+    print(f"[OK] Emitted metrics: AvgWordLen={avg:.2f}, ReviewCount=1, NS={METRIC_NS}")
+
+def _from_s3(bucket: str, key: str):
+    key = urllib.parse.unquote_plus(key)
+    obj = s3.get_object(Bucket=bucket, Key=key)
+    body = obj["Body"].read().decode("utf-8", errors="replace")
     try:
-        data = json.loads(raw_text)
+        payload = json.loads(body)
+        text = payload.get("review") or payload.get("text") or body
     except Exception:
-        return [raw_text.strip()] if raw_text.strip() else []
-
-    if isinstance(data, dict):
-        if "review" in data:
-            return [str(data["review"])]
-        if "reviews" in data:
-            seq = data["reviews"]
-        else:
-            return [json.dumps(data)]
-    else:
-        seq = data
-
-    out = []
-    if isinstance(seq, (list, tuple)):
-        for item in seq:
-            if isinstance(item, dict) and "review" in item:
-                out.append(str(item["review"]))
-            else:
-                out.append(str(item))
-    else:
-        out.append(str(seq))
-    return [r for r in out if str(r).strip()]
-
-def publish_metrics(review_texts):
-    char_lens = [len(r) for r in review_texts]
-    word_lens = [len(str(r).split()) for r in review_texts]
-    avg_char_len = statistics.mean(char_lens) if char_lens else 0.0
-    avg_word_len = statistics.mean(word_lens) if word_lens else 0.0
-    review_count = len(review_texts)
-
-    print(f"Processed {review_count} reviews | avg_char_len={avg_char_len:.2f} | avg_word_len={avg_word_len:.2f}")
-
-    cloudwatch.put_metric_data(
-        Namespace="ReviewAnalyzer",
-        MetricData=[
-            {"MetricName": "ReviewCount", "Value": float(review_count), "Unit": "Count"},
-            {"MetricName": "AvgCharLen",  "Value": float(avg_char_len),  "Unit": "Count"},
-            {"MetricName": "AvgWordLen",  "Value": float(avg_word_len),  "Unit": "Count"},
-        ],
-    )
+        text = body
+    _process_review(text)
 
 def lambda_handler(event, context):
-    print("Event:", json.dumps(event))
-    record = event["Records"][0]
-    bucket = record["s3"]["bucket"]["name"]
-    key    = record["s3"]["object"]["key"]
+    print(f"[EVENT] {json.dumps(event)[:500]}")
 
-    s3 = boto3.client("s3")
-    obj = s3.get_object(Bucket=bucket, Key=key)
-    body = obj["Body"].read().decode("utf-8")
+    # Mode 1: Direct text { "review": "..."} or {"text":"..."}
+    if isinstance(event, dict) and (event.get("review") or event.get("text")):
+        text = event.get("review") or event.get("text")
+        _process_review(text)
+        return {"statusCode": 200, "body": json.dumps("Metrics sent (direct)")}
+    
+    # Mode 2: Manual S3 { "bucket":"...", "key":"..." }
+    if isinstance(event, dict) and event.get("bucket") and event.get("key"):
+        _from_s3(event["bucket"], event["key"])
+        return {"statusCode": 200, "body": json.dumps("Metrics sent (manual s3)")}
 
-    reviews = extract_reviews(body)
-    publish_metrics(reviews)
+    # Mode 3: S3 event trigger
+    if isinstance(event, dict) and event.get("Records"):
+        for rec in event["Records"]:
+            if rec.get("eventSource") == "aws:s3":
+                b = rec["s3"]["bucket"]["name"]
+                k = rec["s3"]["object"]["key"]
+                _from_s3(b, k)
+        return {"statusCode": 200, "body": json.dumps("Metrics sent (s3 trigger)")}
 
-    return {"statusCode": 200, "body": json.dumps("Metrics sent")}
-
+    print("[WARN] Unrecognized event shape; no metrics emitted.")
+    return {"statusCode": 400, "body": json.dumps("Unrecognized event")}

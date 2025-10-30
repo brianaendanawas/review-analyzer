@@ -8,14 +8,37 @@ Simple AWS pipeline that ingests JSON “reviews” from S3, processes them with
 - Trigger: S3 object create for incoming/*.json
 
 ## How it works
+1. Upload JSON files to the S3 bucket (each file = a batch of reviews).  
+2. S3 event triggers Lambda.  
+3. Lambda parses reviews and publishes custom metrics:
+   - `AverageCharLen`  
+   - `AverageWordLen`  
+   - `ReviewCount`  
+4. CloudWatch shows metrics; optional Alarm on `AverageWordLen`.
 
-1. Upload a file such as:
-{"review": "These headphones are very comfortable"}
-into s3://<bucket>/incoming/….
-2. S3 triggers Lambda.
-3. Lambda extracts review, calculates the average word length, and emits metrics.
-4. CloudWatch dashboard visualizes AvgWordLen and ReviewCount.
-5. An alarm monitors AvgWordLen and can notify via SNS.
+## 📂 Sample JSON
+```json
+[
+  {"reviewId": "1", "text": "Great sound quality."},
+  {"reviewId": "2", "text": "Battery life is okay for the price."}
+]
+```
+
+## Quick Test (CLI)
+```bash
+BUCKET=review-analyzer-briana-4nk3j3
+
+# Upload a sample batch
+cat > sample.json << 'EOF'
+[
+  {"reviewId": "1", "text": "Great sound quality."},
+  {"reviewId": "2", "text": "Battery life is okay for the price."},
+  {"reviewId": "3", "text": "Comfortable and lightweight."}
+]
+EOF
+
+aws s3 cp sample.json s3://$BUCKET/incoming/sample-$(date +%s).json
+```
 
 ## Quick Start (CLI)
 BUCKET=review-analyzer-briana-4nk3j3
@@ -86,5 +109,10 @@ review-pipeline/
 ├─ README.md
 └─ .gitignore
 
+## What I practiced
+- S3 → Lambda event wiring
+- Parsing JSON payloads safely
+- Publishing custom CloudWatch metrics
+- Creating a CloudWatch Alarm and testing notifications
 
 Notes: Metrics take ~1–2 minutes to appear. Namespace is case-sensitive.

@@ -41,6 +41,7 @@ aws s3 cp sample.json s3://$BUCKET/incoming/sample-$(date +%s).json
 ```
 
 ## Quick Start (CLI)
+```bash
 BUCKET=review-analyzer-briana-4nk3j3
 FUNCTION=process-reviews
 REGION=$(aws configure get region)
@@ -52,6 +53,7 @@ aws lambda invoke \
   /dev/null >/dev/null
 
 python3 tools/simulator.py --bucket $BUCKET --batch 6 --spike-every 3
+```
 
 ## Dashboard & Alarm
 Dashboard: ReviewAnalyzer
@@ -62,45 +64,48 @@ Set time range to Last 1 hour and refresh.
 Alarm: triggers if AvgWordLen > threshold for 1 datapoint.
 
 ## Lambda Details
-
--File: lambda/lambda_function.py
--Handler: lambda_function.lambda_handler
--Env var: METRIC_NS=ReviewAnalyzer
--Modes:
+- File: lambda/lambda_function.py
+- Handler: lambda_function.lambda_handler
+- Env var: METRIC_NS=ReviewAnalyzer
+- Modes:
 Direct ({"review":"..."} or {"text":"..."})
 Manual ({"bucket":"...","key":"..."})
 S3 event trigger
 
 ## Runbook (Ops)
-
-Force a data point
-
+```bash
+# Force a data point
 aws lambda invoke \
   --function-name process-reviews \
   --cli-binary-format raw-in-base64-out \
   --payload '{"review":"ops smoke test"}' /dev/null
 
-
-Tail logs
-
+# Tail logs
 aws logs tail /aws/lambda/process-reviews --since 15m --follow
-
+```
 
 Teardown (optional)
 
 1) Disable S3 trigger
+```bash
 aws s3api put-bucket-notification-configuration \
   --bucket <your-bucket> \
   --notification-configuration '{}'
+```
 
 2) Delete bucket contents
+```bash
 aws s3 rm s3://<your-bucket>/ --recursive
 aws s3api delete-bucket --bucket <your-bucket>
+```
 
 3) Delete Lambda (optional)
+```bash
 aws lambda delete-function --function-name process-reviews
+```
 
 ## Project Structure
+```bash
 review-pipeline/
 ├─ lambda/
 │  └─ lambda_function.py
@@ -108,6 +113,7 @@ review-pipeline/
 │  └─ simulator.py
 ├─ README.md
 └─ .gitignore
+```
 
 ## What I practiced
 - S3 → Lambda event wiring

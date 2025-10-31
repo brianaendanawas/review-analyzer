@@ -16,6 +16,22 @@ Simple AWS pipeline that ingests JSON “reviews” from S3, processes them with
    - `ReviewCount`  
 4. CloudWatch shows metrics; optional Alarm on `AverageWordLen`.
 
+**Verify in 60 seconds**
+```bash
+# Replace with your bucket
+BUCKET=review-analyzer-briana-4nk3j3
+
+cat > sample.json << 'EOF'
+[
+  {"reviewId":"1","text":"Great sound quality."},
+  {"reviewId":"2","text":"Battery life is okay."}
+]
+EOF
+
+aws s3 cp sample.json s3://$BUCKET/incoming/sample-$(date +%s).json
+# Then: CloudWatch > Metrics > ReviewAnalyzer -> {AverageWordLen, ReviewCount}
+```
+
 ## 📂 Sample JSON
 ```json
 [

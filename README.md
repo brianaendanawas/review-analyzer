@@ -18,7 +18,6 @@ Simple AWS pipeline that ingests JSON “reviews” from S3, processes them with
 
 **Verify in 60 seconds**
 ```bash
-# Replace with your bucket
 BUCKET=review-analyzer-briana-4nk3j3
 
 cat > sample.json << 'EOF'

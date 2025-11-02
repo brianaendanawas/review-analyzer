@@ -141,3 +141,9 @@ review-pipeline/
 - Creating a CloudWatch Alarm and testing notifications
 
 Notes: Metrics take ~1–2 minutes to appear. Namespace is case-sensitive.
+
+
+### 🔍 Quick Verify
+```bash
+bash scripts/smoke_upload.sh
+```

@@ -1,0 +1,7 @@
+line-length = 120
+target-version = "py312"
+
+[lint]
+# Keep it light for a small repo
+select = ["E", "F"]
+ignore = ["E501"]  # don't fail on long lines

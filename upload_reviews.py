@@ -1,5 +1,4 @@
 # upload_reviews.py
-import json
 import boto3
 import pathlib
 import sys

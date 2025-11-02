@@ -1,4 +1,7 @@
-import argparse, json, time, random, string, sys
+import argparse
+import json
+import time
+import random
 import boto3
 
 def random_review(short=False, long=False):

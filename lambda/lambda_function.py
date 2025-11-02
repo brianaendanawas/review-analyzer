@@ -1,4 +1,7 @@
-import json, os, boto3, urllib.parse
+import json
+import os
+import boto3
+import urllib.parse
 
 cw = boto3.client("cloudwatch")
 s3 = boto3.client("s3")

@@ -1,3 +1,5 @@
+![](https://img.shields.io/github/actions/workflow/status/brianaendanawas/review-analyzer/basic-checks.yml?branch=main) ![](https://img.shields.io/github/license/brianaendanawas/review-analyzer ) ![](https://img.shields.io/github/last-commit/brianaendanawas/review-analyzer )
+
 # Review Analyzer – Mini Serverless Pipeline (Week 6)
 
 Simple AWS pipeline that ingests JSON “reviews” from S3, processes them with Lambda, and publishes custom CloudWatch metrics with a dashboard and alarm.
